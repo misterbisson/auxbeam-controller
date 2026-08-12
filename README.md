@@ -22,6 +22,8 @@ being problems, and the wired panel + RF remote keep working as independent over
   and the power/RF/single-central realities that make or break it.
 - **[switchpanel-bridge.esphome.yaml](switchpanel-bridge.esphome.yaml)** — the ESP32 bridge: 12
   switches, an RGB backlight light, a pulse-timing number, and FFF2 state feedback.
+- **[HARDWARE.md](HARDWARE.md)** — a rugged in-vehicle build (Olimex ESP32-GATEWAY-EA + automotive
+  power front-end + external antenna): bill of materials, wiring, and ESPHome board notes.
 
 ## Status
 The protocol was decoded **from the vendor app, ahead of hardware.** The frame bytes are exact, but
