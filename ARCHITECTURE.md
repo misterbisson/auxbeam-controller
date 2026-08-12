@@ -9,31 +9,41 @@ smart-home entity.
 
 ```mermaid
 flowchart LR
-  subgraph Vehicle["Vehicle (mobile, solar + big battery)"]
+  subgraph Vehicle["Vehicle (solar + house battery)"]
     direction LR
     RF["RF remote\n(sub-GHz, ~433MHz)"]
     Panel["Dash switch panel\n(wired)"]
-    subgraph Box["Control box (engine bay)"]
+    subgraph Box["Control box"]
       MCU["MCU + BLE module\nGATT service FFF0"]
       Relays["12 circuits\n≤100A total\ntoggle / momentary / pulsed"]
     end
-    ESP["ESP32 (ESPHome)\nsole BLE central\nignition-switched 12V→5V"]
+    ESP["ESP32 (ESPHome)\nsole BLE central"]
+    subgraph LAN["Onboard network (local WiFi + Starlink/5G uplink)"]
+      HA["Home Assistant\n(runs onboard)"]
+      HK["HomeKit hub"]
+    end
   end
-  HA["Home Assistant\n(van/cabin/home)"]
-  HK["HomeKit\n(Apple Home)"]
+  Phone["Remote access\n(phone, anywhere)"]
 
   RF -->|sub-GHz| MCU
   Panel -->|wired| MCU
   MCU --> Relays
   ESP <-->|"BLE (FFF1 write / FFF2 notify)"| MCU
-  ESP <-->|"WiFi (native API)"| HA
+  ESP <-->|"WiFi — local"| HA
   HA -->|HomeKit Bridge| HK
+  HA <-.->|"internet (remote access only)"| Phone
 ```
 
 Three independent command paths reach the control box: the **wired dash panel**, the **RF remote**
 (separate sub-GHz radio), and **BLE**. We replace the phone app on that BLE path with the ESP32.
 Because the panel exposes **no local API, no MQTT, no HTTP** — BLE is the *only* programmable seam,
 and it turned out to be a clean one.
+
+In the topology drawn above (a van/RV/boat with its own router and Home Assistant onboard), the
+**entire control loop is local to the vehicle** — BLE to the box and WiFi to the onboard AP are both
+short, always-on hops. The Starlink/5G uplink carries only *remote* access, never the control path.
+See [Network topology](#physical--electrical-realities-what-actually-makes-it-work) for the
+alternative (a rig that leans on an external/home AP).
 
 ## Why this is tractable (the RE result)
 Decompiling the vendor app (`com.qunchen.ble.switchpanel` v2.1.2; see [PROTOCOL.md](PROTOCOL.md))
@@ -79,12 +89,17 @@ Homebridge) re-exposes those entities to Apple Home — no HomeKit code on the E
 - **Single BLE central:** these modules accept one connection at a time. By *never* running the
   vendor app, the ESP owns the link uncontested; the wired panel and RF remote are separate paths
   and keep working regardless.
-- **The ESP travels with the vehicle**, which dissolves BLE's few-meters range problem — put it near
-  the control box's BLE module. HA/HomeKit only see the circuits when the vehicle is on your WiFi;
-  that's expected and fine for a van/cabin/boat/shop parked on network.
-- **Power:** the ESP is an always-on BLE client. On this build (solar + kWh battery) the draw is
-  noise; still feed it from an **ignition-switched 12V→5V buck** (or deep-sleep) so a long park
-  doesn't nibble the starter battery.
+- **Network topology decides everything about reach.** The cleanest case — a **van/RV/boat with an
+  onboard router** (e.g. Starlink/5G uplink + local WiFi) and **Home Assistant running onboard** —
+  makes *both* radios short, local, always-on hops: the ESP sits near the control box for BLE and
+  talks to the onboard AP for WiFi, so there is no range or intermittency problem and the internet
+  uplink is only for remote access. A rig **without** an onboard network (say a Jeep leaning on your
+  house WiFi) instead sees the circuits only when parked in range — and even then ESPHome
+  auto-reconnects and FFF2 re-syncs state, so it degrades gracefully rather than breaking.
+- **Power:** the ESP is an always-on BLE client, but the draw is tiny (~60–80 mA from 12 V). On a
+  **house-battery + solar** system it just lives on the house bus — no ignition-switching needed. Only
+  on a start-battery-only rig would you gate it with an ignition-switched feed or deep-sleep so a long
+  park doesn't nibble the battery. See [HARDWARE.md](HARDWARE.md) for the power front-end.
 - **Radio:** ESP32 shares one 2.4GHz radio between WiFi + BLE; fine at this traffic level.
 
 ## Verified vs. confirm-on-hardware
@@ -101,5 +116,7 @@ physical switches and RF remote remain as independent overrides.
 
 ## File map
 - [PROTOCOL.md](PROTOCOL.md) — full decoded BLE protocol + hardware verification checklist
+- [HARDWARE.md](HARDWARE.md) — ESP32 board choices, automotive power front-end, antenna strategy
 - [switchpanel-bridge.esphome.yaml](switchpanel-bridge.esphome.yaml) — the ESP32 bridge (fill in MAC + WiFi)
-- `apk/` — the decompiled app (`switchpanel-2.1.2.apk`); `jadx-out/` — decompiled sources
+- The vendor app is **not** redistributed here — see the README's "reproduce it" steps to regenerate
+  the decompilation yourself.

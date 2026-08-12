@@ -3,17 +3,27 @@
 Two documented builds for the in-vehicle BLE→WiFi bridge in [ARCHITECTURE.md](ARCHITECTURE.md). They
 differ mainly in **antenna strategy**, and the right pick depends on **where you mount it**.
 
-The bridge has two radios to keep happy: **BLE to the control box** and **WiFi to your home network**.
-Where you mount the package decides which one is the hard one:
+The bridge has two radios to keep happy: **BLE to the control box** and **WiFi to a network**. How much
+either one matters depends first on your **network topology**, then on where you mount the package.
+
+> **Onboard network (van/RV/boat) — the easy case.** If the vehicle has its own router + local WiFi
+> (e.g. a Starlink/5G uplink) and **Home Assistant runs onboard**, then *both* radios are short,
+> always-on, local hops. WiFi stops being a design variable — even a PCB-antenna board reaching your
+> own AP across the vehicle is trivial — so **pick on packaging alone** (Option B is a great fit). The
+> antenna tradeoff in the table below only bites when the bridge must reach an **external/home AP**
+> intermittently (e.g. a Jeep parked in the driveway).
+
+If you *do* depend on an external AP, where you mount the package decides which radio is the hard one:
 
 | If you're… | Pick | Because |
 |---|---|---|
 | mounting **away** from the control box, or want to place the antenna freely | **A. Olimex ESP32-GATEWAY-EA** | external U.FL whip you can route to the best spot — helps **both** BLE and WiFi |
 | mounting the package **on/at the Auxbeam control box** | **B. Kincony KC868-A4** | 12 V-native, screw terminals, case, ESPHome-proven; **BLE is solved by proximity** — you just plan WiFi |
 
-Mounting on the control box makes BLE a non-issue (the ESP is inches from the module), which makes the
-turnkey Kincony very attractive — the cost is that its **PCB antenna is pinned to the engine bay**, so
-**WiFi** becomes the variable. See [Option B's WiFi notes](#wifi-the-variable-in-this-build).
+With an external AP, mounting on the control box makes BLE a non-issue (the ESP is inches from the
+module) but pins the Kincony's **PCB antenna** to the control box's location, so **WiFi** becomes the
+variable. See [Option B's WiFi notes](#wifi-the-variable-in-this-build). *(On an onboard-network van,
+skip that concern entirely.)*
 
 ## Automotive power front-end (both builds)
 A vehicle rail sits ~12.6 V at rest, ~14.4 V charging, with load-dump transients far higher. Regardless
@@ -90,8 +100,11 @@ portion of [switchpanel-bridge.esphome.yaml](switchpanel-bridge.esphome.yaml) is
 `framework: esp-idf` for `ble_client.ble_write`.
 
 ### WiFi — the variable in this build
-With the package on the control box (often deep in engine-bay metal) and a **fixed PCB antenna**, WiFi
-is the link to design around, not BLE. Options, roughly in order:
+**Only relevant if the KC868 must reach an external/home AP.** On a van/RV with an **onboard AP** a few
+meters away, WiFi is a non-issue even with the PCB antenna — mount wherever is convenient and skip this.
+
+For the external-AP case, with the package on the control box (often deep in engine-bay metal) and a
+**fixed PCB antenna**, WiFi is the link to design around, not BLE. Options, roughly in order:
 
 - **Improve the AP side, not the vehicle.** A garage/driveway-facing **2.4 GHz** AP or a mesh node near
   where you park is the highest-leverage fix (2.4 GHz penetrates better than 5 GHz — make sure the SSID
