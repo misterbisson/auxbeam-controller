@@ -1,0 +1,2 @@
+# Phase 0 bench script (tools/panel_bench.py)
+bleak>=0.21

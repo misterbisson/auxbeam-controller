@@ -10,11 +10,19 @@ route through *whatever* adapter HA knows about — the Pi's onboard radio today
 **Bluetooth Proxy** later — with no change to the integration or its entities.
 
 ## Phase 0 — Bench validation (any machine, ~30 min)
-A minimal `bleak` script to confirm the protocol against the real panel before building anything:
-scan for `Controller12`, connect (is it really no-PIN?), write `0C 18 88 88 88 88 88` to **FFF1**
-(ch1 on) and `0C 08 …` (off), subscribe **FFF2**, then flip a *physical* switch and watch for a
-notification. This closes the open *verify* items in [PROTOCOL.md](PROTOCOL.md) (no-PIN connect,
-FFF2-on-physical-change, FFF2 framing, MAC/name) and de-risks every later phase.
+Run **[`tools/panel_bench.py`](tools/panel_bench.py)** (`pip install -r tools/requirements.txt`) against
+the real panel before building anything. It scans for `Controller12`, connects (checks it's really
+no-PIN), dumps the GATT table, reads/decodes **FFF2** state, watches for a notification when you flip a
+*physical* switch, and — only if you pass `--channel N` — proves a write toggles that relay. It prints a
+PASS/---- checklist mapping straight to [PROTOCOL.md](PROTOCOL.md)'s open *verify* items (no-PIN connect,
+FFF2-on-physical-change, FFF2 framing, MAC/name, RSSI). **Read-only by default; it never actuates a
+circuit unless you name one.** This de-risks every later phase.
+
+```bash
+python3 tools/panel_bench.py --scan-only                       # find it, check signal
+python3 tools/panel_bench.py --address AA:BB:CC:DD:EE:FF        # connect + GATT + read + notify watch
+python3 tools/panel_bench.py --address AA:BB:CC:DD:EE:FF --channel 1   # + prove a write (toggles ch1)
+```
 
 ## Phase 1 — Pi-direct integration (ship it)
 A small HA **custom integration** running on the Pi that:

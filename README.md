@@ -27,6 +27,8 @@ being problems, and the wired panel + RF remote keep working as independent over
   antenna strategy, and ESPHome board notes.
 - **[ROADMAP.md](ROADMAP.md)** — phased plan: start on the Pi's own Bluetooth (HA custom integration),
   graduate to an ESP32 (Bluetooth Proxy) only if range/contention/decoupling demand it — with no rewrite.
+- **[tools/panel_bench.py](tools/panel_bench.py)** — Phase 0 bench script: scan/connect/GATT-dump, decode
+  FFF2 state, watch physical-switch notifications, optional relay-toggle test. Read-only by default.
 
 ## Status
 The protocol was decoded **from the vendor app, ahead of hardware.** The frame bytes are exact, but
