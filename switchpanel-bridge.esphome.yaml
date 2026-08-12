@@ -1,0 +1,325 @@
+# ESPHome bridge for Auxbeam AC-1200 (Qunchen "Controller12") — SCAFFOLD
+# Decoded from app v2.1.2; see PROTOCOL.md. Fill in the two TODOs, then verify on hardware.
+#   1) panel MAC (get it from LightBlue/nRF once the panel is powered)
+#   2) wifi creds
+# NOTE: ble_client.ble_write requires ESP-IDF framework on the ESP32. Confirm the action/UUID
+#       short-form syntax against YOUR esphome version — the shape here is right, details drift.
+
+esphome:
+  name: auxbeam-bridge
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf        # ble_write needs esp-idf, not arduino
+
+wifi:
+  ssid: "TODO_SSID"
+  password: "TODO_PASS"
+
+logger:
+api:
+ota:
+
+esp32_ble_tracker:
+
+ble_client:
+  - mac_address: "TODO:AA:BB:CC:DD:EE"   # <-- panel BLE MAC (Controller12)
+    id: panel
+
+switch:
+  - platform: template
+    name: "Panel Ch 01"
+    id: ch01
+    optimistic: true          # flips to real state via the FFF2 notify sensor below
+    turn_on_action:
+      - ble_client.ble_write:
+          id: panel
+          service_uuid:        "fff0"
+          characteristic_uuid: "fff1"
+          value: [0x0C, 0x18, 0x88, 0x88, 0x88, 0x88, 0x88]
+    turn_off_action:
+      - ble_client.ble_write:
+          id: panel
+          service_uuid:        "fff0"
+          characteristic_uuid: "fff1"
+          value: [0x0C, 0x08, 0x88, 0x88, 0x88, 0x88, 0x88]
+  - platform: template
+    name: "Panel Ch 02"
+    id: ch02
+    optimistic: true          # flips to real state via the FFF2 notify sensor below
+    turn_on_action:
+      - ble_client.ble_write:
+          id: panel
+          service_uuid:        "fff0"
+          characteristic_uuid: "fff1"
+          value: [0x0C, 0x81, 0x88, 0x88, 0x88, 0x88, 0x88]
+    turn_off_action:
+      - ble_client.ble_write:
+          id: panel
+          service_uuid:        "fff0"
+          characteristic_uuid: "fff1"
+          value: [0x0C, 0x80, 0x88, 0x88, 0x88, 0x88, 0x88]
+  - platform: template
+    name: "Panel Ch 03"
+    id: ch03
+    optimistic: true          # flips to real state via the FFF2 notify sensor below
+    turn_on_action:
+      - ble_client.ble_write:
+          id: panel
+          service_uuid:        "fff0"
+          characteristic_uuid: "fff1"
+          value: [0x0C, 0x88, 0x18, 0x88, 0x88, 0x88, 0x88]
+    turn_off_action:
+      - ble_client.ble_write:
+          id: panel
+          service_uuid:        "fff0"
+          characteristic_uuid: "fff1"
+          value: [0x0C, 0x88, 0x08, 0x88, 0x88, 0x88, 0x88]
+  - platform: template
+    name: "Panel Ch 04"
+    id: ch04
+    optimistic: true          # flips to real state via the FFF2 notify sensor below
+    turn_on_action:
+      - ble_client.ble_write:
+          id: panel
+          service_uuid:        "fff0"
+          characteristic_uuid: "fff1"
+          value: [0x0C, 0x88, 0x81, 0x88, 0x88, 0x88, 0x88]
+    turn_off_action:
+      - ble_client.ble_write:
+          id: panel
+          service_uuid:        "fff0"
+          characteristic_uuid: "fff1"
+          value: [0x0C, 0x88, 0x80, 0x88, 0x88, 0x88, 0x88]
+  - platform: template
+    name: "Panel Ch 05"
+    id: ch05
+    optimistic: true          # flips to real state via the FFF2 notify sensor below
+    turn_on_action:
+      - ble_client.ble_write:
+          id: panel
+          service_uuid:        "fff0"
+          characteristic_uuid: "fff1"
+          value: [0x0C, 0x88, 0x88, 0x18, 0x88, 0x88, 0x88]
+    turn_off_action:
+      - ble_client.ble_write:
+          id: panel
+          service_uuid:        "fff0"
+          characteristic_uuid: "fff1"
+          value: [0x0C, 0x88, 0x88, 0x08, 0x88, 0x88, 0x88]
+  - platform: template
+    name: "Panel Ch 06"
+    id: ch06
+    optimistic: true          # flips to real state via the FFF2 notify sensor below
+    turn_on_action:
+      - ble_client.ble_write:
+          id: panel
+          service_uuid:        "fff0"
+          characteristic_uuid: "fff1"
+          value: [0x0C, 0x88, 0x88, 0x81, 0x88, 0x88, 0x88]
+    turn_off_action:
+      - ble_client.ble_write:
+          id: panel
+          service_uuid:        "fff0"
+          characteristic_uuid: "fff1"
+          value: [0x0C, 0x88, 0x88, 0x80, 0x88, 0x88, 0x88]
+  - platform: template
+    name: "Panel Ch 07"
+    id: ch07
+    optimistic: true          # flips to real state via the FFF2 notify sensor below
+    turn_on_action:
+      - ble_client.ble_write:
+          id: panel
+          service_uuid:        "fff0"
+          characteristic_uuid: "fff1"
+          value: [0x0C, 0x88, 0x88, 0x88, 0x18, 0x88, 0x88]
+    turn_off_action:
+      - ble_client.ble_write:
+          id: panel
+          service_uuid:        "fff0"
+          characteristic_uuid: "fff1"
+          value: [0x0C, 0x88, 0x88, 0x88, 0x08, 0x88, 0x88]
+  - platform: template
+    name: "Panel Ch 08"
+    id: ch08
+    optimistic: true          # flips to real state via the FFF2 notify sensor below
+    turn_on_action:
+      - ble_client.ble_write:
+          id: panel
+          service_uuid:        "fff0"
+          characteristic_uuid: "fff1"
+          value: [0x0C, 0x88, 0x88, 0x88, 0x81, 0x88, 0x88]
+    turn_off_action:
+      - ble_client.ble_write:
+          id: panel
+          service_uuid:        "fff0"
+          characteristic_uuid: "fff1"
+          value: [0x0C, 0x88, 0x88, 0x88, 0x80, 0x88, 0x88]
+  - platform: template
+    name: "Panel Ch 09"
+    id: ch09
+    optimistic: true          # flips to real state via the FFF2 notify sensor below
+    turn_on_action:
+      - ble_client.ble_write:
+          id: panel
+          service_uuid:        "fff0"
+          characteristic_uuid: "fff1"
+          value: [0x0C, 0x88, 0x88, 0x88, 0x88, 0x18, 0x88]
+    turn_off_action:
+      - ble_client.ble_write:
+          id: panel
+          service_uuid:        "fff0"
+          characteristic_uuid: "fff1"
+          value: [0x0C, 0x88, 0x88, 0x88, 0x88, 0x08, 0x88]
+  - platform: template
+    name: "Panel Ch 10"
+    id: ch10
+    optimistic: true          # flips to real state via the FFF2 notify sensor below
+    turn_on_action:
+      - ble_client.ble_write:
+          id: panel
+          service_uuid:        "fff0"
+          characteristic_uuid: "fff1"
+          value: [0x0C, 0x88, 0x88, 0x88, 0x88, 0x81, 0x88]
+    turn_off_action:
+      - ble_client.ble_write:
+          id: panel
+          service_uuid:        "fff0"
+          characteristic_uuid: "fff1"
+          value: [0x0C, 0x88, 0x88, 0x88, 0x88, 0x80, 0x88]
+  - platform: template
+    name: "Panel Ch 11"
+    id: ch11
+    optimistic: true          # flips to real state via the FFF2 notify sensor below
+    turn_on_action:
+      - ble_client.ble_write:
+          id: panel
+          service_uuid:        "fff0"
+          characteristic_uuid: "fff1"
+          value: [0x0C, 0x88, 0x88, 0x88, 0x88, 0x88, 0x18]
+    turn_off_action:
+      - ble_client.ble_write:
+          id: panel
+          service_uuid:        "fff0"
+          characteristic_uuid: "fff1"
+          value: [0x0C, 0x88, 0x88, 0x88, 0x88, 0x88, 0x08]
+  - platform: template
+    name: "Panel Ch 12"
+    id: ch12
+    optimistic: true          # flips to real state via the FFF2 notify sensor below
+    turn_on_action:
+      - ble_client.ble_write:
+          id: panel
+          service_uuid:        "fff0"
+          characteristic_uuid: "fff1"
+          value: [0x0C, 0x88, 0x88, 0x88, 0x88, 0x88, 0x81]
+    turn_off_action:
+      - ble_client.ble_write:
+          id: panel
+          service_uuid:        "fff0"
+          characteristic_uuid: "fff1"
+          value: [0x0C, 0x88, 0x88, 0x88, 0x88, 0x88, 0x80]
+
+# --- State feedback from the panel (FFF2 notify) -----------------------------
+# The panel pushes channel state here. Payload = one nibble per channel
+# (odd = ON, mode = nibble/2). VERIFY on hardware whether a leading count byte
+# is present. This text_sensor logs raw notifications so you can confirm the
+# framing, then fan the nibbles out to the switches (publish_state) in the lambda.
+text_sensor:
+  - platform: ble_client
+    ble_client_id: panel
+    name: "Panel raw state (FFF2)"
+    service_uuid:        "fff0"
+    characteristic_uuid: "fff2"
+    notify: true
+    lambda: |-
+      std::string hex;
+      char buf[4];
+      for (auto b : x) { sprintf(buf, "%02X", b); hex += buf; }
+      ESP_LOGI("panel", "FFF2 notify: %s", hex.c_str());
+      // TODO once framing confirmed: for ch=1..12 read nibble, id(chNN).publish_state(nibble & 1);
+      return hex;
+
+# --- RGB backlight (FFF4) -----------------------------------------------------
+# Whole-panel backlight (one color for all legends). Wire frame = [brightness,R,G,B].
+# HA exposes a normal RGB light. ESPHome scales R/G/B by the HA brightness slider,
+# so we pin the panel's master-brightness byte to 0xFF and let the scaled RGB carry
+# brightness. (Prefer the panel's native brightness byte instead? Send it as byte[0]
+# and disable ESPHome's scaling with `gamma_correct: 0` + a brightness-only mode.)
+# The three template outputs fire near-simultaneously on a color change; the
+# `mode: restart` script debounces them into ONE 4-byte packet.
+
+globals:
+  - { id: g_r, type: int, restore_value: false, initial_value: '0' }
+  - { id: g_g, type: int, restore_value: false, initial_value: '0' }
+  - { id: g_b, type: int, restore_value: false, initial_value: '0' }
+
+output:
+  - platform: template
+    id: bl_r
+    type: float
+    write_action:
+      - lambda: id(g_r) = (int)(state * 255.0f);
+      - script.execute: bl_flush
+  - platform: template
+    id: bl_g
+    type: float
+    write_action:
+      - lambda: id(g_g) = (int)(state * 255.0f);
+      - script.execute: bl_flush
+  - platform: template
+    id: bl_b
+    type: float
+    write_action:
+      - lambda: id(g_b) = (int)(state * 255.0f);
+      - script.execute: bl_flush
+
+light:
+  - platform: rgb
+    name: "Panel Backlight"
+    id: backlight
+    red: bl_r
+    green: bl_g
+    blue: bl_b
+
+script:
+  - id: bl_flush
+    mode: restart          # collapse the 3 output writes into a single packet
+    then:
+      - delay: 30ms
+      - ble_client.ble_write:
+          id: panel
+          service_uuid:        "fff0"
+          characteristic_uuid: "fff4"
+          value: !lambda |-
+            return { 0xFF, (uint8_t) id(g_r), (uint8_t) id(g_g), (uint8_t) id(g_b) };
+
+# --- Pulse timing (FFFA) ------------------------------------------------------
+# One panel-wide byte for pulsed-mode ("Flash") channels. NOTE the inversion:
+# the app slider is 0..46 but the WIRE byte = 50 - slider, so the real range is
+# 4..50 (lower byte = longer travel on the app slider). We expose the raw byte
+# directly to HA. Units unconfirmed (likely tens of ms) — label once measured.
+number:
+  - platform: template
+    name: "Panel Pulse Time"
+    id: pulse_time
+    optimistic: true
+    min_value: 4
+    max_value: 50
+    step: 1
+    mode: slider
+    set_action:
+      - ble_client.ble_write:
+          id: panel
+          service_uuid:        "fff0"
+          characteristic_uuid: "fffa"
+          value: !lambda 'return { (uint8_t) x };'   # x = selected number (4..50)
+
+# Optional: sync the number from the panel on connect (FFFA is readable).
+# Add under the ble_client above to pull the current value once connected:
+#   on_connect:
+#     - delay: 1s
+#     - lambda: |-
+#         // read FFFA and id(pulse_time).publish_state(value[0]);
+#         // (use an esp32_ble_client read; see ESPHome BLE client docs)

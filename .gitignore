@@ -1,0 +1,18 @@
+# This is the PUBLIC repo — it must contain ONLY original, redistributable work.
+# Never commit the vendor app or its decompilation here (they live only in the
+# private investigation archive). These entries are a hard guard against slips:
+apk/
+jadx-out/
+*.apk
+*.xapk
+
+# macOS noise
+.DS_Store
+
+# Editor/tooling
+.idea/
+.vscode/
+*.swp
+
+# Local secrets, if you split them out of the YAML
+secrets.yaml
