@@ -16,3 +16,7 @@ jadx-out/
 
 # Local secrets, if you split them out of the YAML
 secrets.yaml
+
+# Python
+__pycache__/
+*.pyc
