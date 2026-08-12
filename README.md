@@ -25,6 +25,8 @@ being problems, and the wired panel + RF remote keep working as independent over
 - **[HARDWARE.md](HARDWARE.md)** — two rugged in-vehicle builds (Olimex ESP32-GATEWAY-EA for antenna
   flexibility, or Kincony KC868-A4 turnkey/controller-mounted): BOM, automotive power front-end,
   antenna strategy, and ESPHome board notes.
+- **[ROADMAP.md](ROADMAP.md)** — phased plan: start on the Pi's own Bluetooth (HA custom integration),
+  graduate to an ESP32 (Bluetooth Proxy) only if range/contention/decoupling demand it — with no rewrite.
 
 ## Status
 The protocol was decoded **from the vendor app, ahead of hardware.** The frame bytes are exact, but
