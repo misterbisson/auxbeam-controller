@@ -29,11 +29,16 @@ being problems, and the wired panel + RF remote keep working as independent over
   graduate to an ESP32 (Bluetooth Proxy) only if range/contention/decoupling demand it — with no rewrite.
 - **[tools/panel_bench.py](tools/panel_bench.py)** — Phase 0 bench script: scan/connect/GATT-dump, decode
   FFF2 state, watch physical-switch notifications, optional relay-toggle test. Read-only by default.
+- **[custom_components/auxbeam/](custom_components/auxbeam/)** — Phase 1 Home Assistant custom integration
+  (switches + backlight light + pulse number) on HA's Bluetooth stack. **Theoretical sketch — untested on
+  hardware**; see its README.
 
 ## Status
-The protocol was decoded **from the vendor app, ahead of hardware.** The frame bytes are exact, but
-items marked *verify* in PROTOCOL.md (no-PIN connect, whether the panel notifies on physical/RF
-changes, readback framing, pulse units) still want a bench check against a real panel.
+Decoded **from the vendor app, ahead of hardware — nothing here has been tested against a real panel
+yet.** The frame bytes are derived exactly from the app's own logic, and the Python is unit-checked for
+correctness, but the *behavioral* items marked *verify* in PROTOCOL.md (no-PIN connect, whether the panel
+notifies on physical/RF changes, readback framing, pulse units) and the whole Phase 1 integration remain
+**theoretical until [`tools/panel_bench.py`](tools/panel_bench.py) is run on hardware.**
 **Bench reports welcome** — see [Contributing](#contributing).
 
 ## Quick start

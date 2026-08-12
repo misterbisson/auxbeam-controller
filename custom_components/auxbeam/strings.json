@@ -1,0 +1,21 @@
+{
+  "config": {
+    "flow_title": "{name}",
+    "step": {
+      "user": {
+        "title": "Auxbeam / Qunchen switch panel",
+        "description": "Select the panel to add.",
+        "data": { "address": "Device" }
+      },
+      "confirm": {
+        "title": "Auxbeam / Qunchen switch panel",
+        "description": "Add {name}?"
+      }
+    },
+    "abort": {
+      "already_configured": "This panel is already configured.",
+      "no_devices_found": "No switch panel found nearby.",
+      "not_supported": "This Bluetooth device is not a supported switch panel."
+    }
+  }
+}

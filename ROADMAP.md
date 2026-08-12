@@ -25,6 +25,10 @@ python3 tools/panel_bench.py --address AA:BB:CC:DD:EE:FF --channel 1   # + prove
 ```
 
 ## Phase 1 — Pi-direct integration (ship it)
+> A first sketch lives in **[`custom_components/auxbeam/`](custom_components/auxbeam/)** — structure,
+> BLE connection manager, and all three platforms — but it is **theoretical and untested on hardware**;
+> it can't be trusted until Phase 0 confirms the behavioral unknowns.
+
 A small HA **custom integration** running on the Pi that:
 - connects via HA's Bluetooth stack (proxy-transparent — see below),
 - exposes stable entities: `switch.panel_ch_01…12`, `light.panel_backlight`, `number.panel_pulse_time`,
