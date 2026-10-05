@@ -16,8 +16,7 @@ CHAR_PULSE = "0000fffa-0000-1000-8000-00805f9b34fb"      # read + write: pulse t
 # Panels advertise a name like Controller12 / Controller8 ... (confirm in Phase 0).
 NAME_PREFIX = "Controller"
 
-CONF_LOOPS = "loops"
-DEFAULT_LOOPS = 12
+CONF_LOOPS = "loops"  # gang count, auto-detected from the advertised name at config time
 
 # Pulse-timing wire byte range (inverted vs the app slider) — see PROTOCOL.md
 PULSE_MIN = 4

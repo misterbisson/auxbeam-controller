@@ -10,7 +10,18 @@ from homeassistant.components.bluetooth import (
 )
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 
-from .const import DOMAIN, NAME_PREFIX
+from .const import CONF_LOOPS, DOMAIN, NAME_PREFIX
+from .protocol import loop_count_from_name
+
+
+def _title(info: BluetoothServiceInfoBleak) -> str:
+    # Identical panels advertise the same name, so add a short address suffix to tell them apart.
+    short_id = info.address.replace(":", "").replace("-", "")[-4:].upper()
+    return f"{info.name or 'Switch Panel'} {short_id}"
+
+
+def _entry_data(info: BluetoothServiceInfoBleak) -> dict[str, Any]:
+    return {CONF_LOOPS: loop_count_from_name(info.name)}
 
 
 def _is_panel(info: BluetoothServiceInfoBleak) -> bool:
@@ -37,7 +48,7 @@ class AuxbeamConfigFlow(ConfigFlow, domain=DOMAIN):
         if not _is_panel(discovery_info):
             return self.async_abort(reason="not_supported")
         self._discovered = discovery_info
-        self.context["title_placeholders"] = {"name": discovery_info.name or discovery_info.address}
+        self.context["title_placeholders"] = {"name": _title(discovery_info)}
         return await self.async_step_confirm()
 
     async def async_step_confirm(
@@ -46,11 +57,11 @@ class AuxbeamConfigFlow(ConfigFlow, domain=DOMAIN):
         assert self._discovered is not None
         if user_input is not None:
             return self.async_create_entry(
-                title=self._discovered.name or self._discovered.address, data={}
+                title=_title(self._discovered), data=_entry_data(self._discovered)
             )
         return self.async_show_form(
             step_id="confirm",
-            description_placeholders={"name": self._discovered.name or self._discovered.address},
+            description_placeholders={"name": _title(self._discovered)},
         )
 
     async def async_step_user(
@@ -61,9 +72,8 @@ class AuxbeamConfigFlow(ConfigFlow, domain=DOMAIN):
             address = user_input["address"]
             await self.async_set_unique_id(address, raise_on_progress=False)
             self._abort_if_unique_id_configured()
-            return self.async_create_entry(
-                title=self._discoveries[address].name or address, data={}
-            )
+            info = self._discoveries[address]
+            return self.async_create_entry(title=_title(info), data=_entry_data(info))
 
         current = self._async_current_ids()
         for info in async_discovered_service_info(self.hass):
@@ -79,7 +89,7 @@ class AuxbeamConfigFlow(ConfigFlow, domain=DOMAIN):
             data_schema=vol.Schema(
                 {
                     vol.Required("address"): vol.In(
-                        {a: (i.name or a) for a, i in self._discoveries.items()}
+                        {a: _title(i) for a, i in self._discoveries.items()}
                     )
                 }
             ),

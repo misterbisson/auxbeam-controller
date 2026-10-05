@@ -12,8 +12,9 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryNotReady
 
-from .const import CONF_LOOPS, DEFAULT_LOOPS, DOMAIN, PLATFORMS
+from .const import CONF_LOOPS, DOMAIN, PLATFORMS
 from .panel import AuxbeamPanel
+from .protocol import loop_count_from_name
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -24,7 +25,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if ble_device is None:
         raise ConfigEntryNotReady(f"Panel {address} not found (out of range or no adapter/proxy)")
 
-    panel = AuxbeamPanel(ble_device, entry.data.get(CONF_LOOPS, DEFAULT_LOOPS))
+    # Gang count is fixed at config time; fall back to the advertised name for older entries.
+    loops = entry.data.get(CONF_LOOPS) or loop_count_from_name(ble_device.name)
+    panel = AuxbeamPanel(ble_device, loops, name=entry.title)
 
     @callback
     def _async_update_ble(service_info: bluetooth.BluetoothServiceInfoBleak, change) -> None:

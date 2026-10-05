@@ -14,6 +14,19 @@ MODE_PULSED = 2
 _MODE_NAMES = {MODE_TOGGLE: "toggle", MODE_MOMENTARY: "momentary", MODE_PULSED: "pulsed"}
 
 
+def loop_count_from_name(name: str | None) -> int:
+    """Gang count from the advertised BLE name, mirroring the vendor app's own rule:
+    Controller12 -> 12, Controller6 -> 6, Controller4 -> 4, Controller10 -> 10, anything else 8."""
+    name = name or ""
+    if "Controller12" in name:
+        return 12
+    if "Controller6" in name:
+        return 6
+    if "Controller4" in name:
+        return 4
+    return 10 if "Controller10" in name else 8
+
+
 def build_control_frame(channel: int, on: bool, loop_count: int = 12, mode: int = MODE_TOGGLE) -> bytes:
     """[loop_count][packed nibbles]; target channel = mode*2+on, others = 8. 1-based channel."""
     if not 1 <= channel <= loop_count:

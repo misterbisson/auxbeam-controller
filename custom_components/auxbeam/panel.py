@@ -25,9 +25,10 @@ _LOGGER = logging.getLogger(__name__)
 class AuxbeamPanel:
     """Owns the BLE link and the last-known panel state."""
 
-    def __init__(self, ble_device: BLEDevice, loop_count: int = 12) -> None:
+    def __init__(self, ble_device: BLEDevice, loop_count: int = 12, name: str | None = None) -> None:
         self._ble_device = ble_device
         self._loop_count = loop_count
+        self.name = name or ble_device.name or "Switch Panel"
         self._client: BleakClientWithServiceCache | None = None
         self._lock = asyncio.Lock()
         self._stopped = False
@@ -88,7 +89,7 @@ class AuxbeamPanel:
             client = await establish_connection(
                 BleakClientWithServiceCache,
                 self._ble_device,
-                self._ble_device.name or "auxbeam-panel",
+                self.name,
                 disconnected_callback=self._on_disconnect,
                 ble_device_callback=lambda: self._ble_device,
             )

@@ -15,6 +15,16 @@ stack (`bleak-retry-connector`), so connections route over the Pi's adapter toda
 - `light.*` "Backlight" — whole-panel RGB, honoring the panel's independent brightness byte
 - `number.*` "Pulse Time" — the raw FFFA byte (4–50)
 
+## Multiple panels and other gang counts
+- **Add the integration once per control box.** Each panel is its own config entry, connection and
+  device, keyed on its BLE address. Devices are named from the advertised name plus a short address
+  suffix (e.g. `Controller12 A1B2`), because identical panels advertise the same name — rename them in HA.
+- **Gang count is auto-detected** from the advertised name using the vendor app's own rule
+  (`Controller12` → 12, `Controller6` → 6, `Controller4` → 4, `Controller10` → 10, anything else → 8), so
+  an 8-gang AR-800 and a 12-gang AC-1200 can coexist.
+- **Not handled yet:** the vendor app pads the control frame to 7 bytes for panels whose name contains
+  `Controller8`. This sketch sends the unpadded 5-byte frame for every 8-gang.
+
 ## Layout
 | File | Role |
 |------|------|

@@ -22,7 +22,7 @@ class AuxbeamEntity(Entity):
             identifiers={(DOMAIN, panel.address)},
             manufacturer="Auxbeam / Qunchen",
             model=f"{panel.loop_count}-gang switch panel",
-            name="Auxbeam Panel",
+            name=panel.name,  # per-panel: advertised name + address suffix
         )
 
     @property
