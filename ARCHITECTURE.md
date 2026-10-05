@@ -116,7 +116,7 @@ physical switches and RF remote remain as independent overrides.
 
 ## File map
 - [PROTOCOL.md](PROTOCOL.md) — full decoded BLE protocol + hardware verification checklist
-- [HARDWARE.md](HARDWARE.md) — ESP32 board choices, automotive power front-end, antenna strategy
+- [HARDWARE.md](HARDWARE.md) — ESP32 board choices, automotive power front-end, antenna strategy, panel current ratings
 - [switchpanel-bridge.esphome.yaml](switchpanel-bridge.esphome.yaml) — the ESP32 bridge (fill in MAC + WiFi)
 - The vendor app is **not** redistributed here — see the README's "reproduce it" steps to regenerate
   the decompilation yourself.

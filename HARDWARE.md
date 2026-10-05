@@ -3,6 +3,8 @@
 Two documented builds for the in-vehicle BLE→WiFi bridge in [ARCHITECTURE.md](ARCHITECTURE.md). They
 differ mainly in **antenna strategy**, and the right pick depends on **where you mount it**.
 
+Choosing the panel itself? See [AR-800 vs AC-1200 current ratings](#switch-panels--ar-800-vs-ac-1200-current-ratings).
+
 The bridge has two radios to keep happy: **BLE to the control box** and **WiFi to a network**. How much
 either one matters depends first on your **network topology**, then on where you mount the package.
 
@@ -128,6 +130,38 @@ unless you want it.
 This bridge commands **high-current vehicle circuits** — some may drive winches or other
 momentary/high-consequence loads. Keep those out of any automation (or manual-only). The wired dash
 panel and RF remote remain independent overrides. No warranty; use at your own risk.
+
+## Switch panels — AR-800 vs AC-1200 current ratings
+Not part of the bridge, but it decides which panel(s) the bridge talks to. Both panels use the same app
+and BLE protocol ([PROTOCOL.md](PROTOCOL.md)), and several control boxes can run side by side (one BLE
+connection each). Figures are from Auxbeam's product listings and wiring diagrams as of 2026-10-05 —
+**not** from a manual or a teardown; confirm against the unit you receive.
+
+| | AR-800 (8-gang) | AC-1200 (12-gang) |
+|---|---|---|
+| Total max current | 60 A | 100 A |
+| Max power @ 12 V / 24 V | 720 W / 1400 W | 1200 W / 2400 W |
+| 30 A circuits | 2 (ch 1–2) | 2 (ch 1–2) |
+| 20 A circuits | 2 (ch 3–4) | 4 (ch 3–6) |
+| 10 A circuits | 2 (ch 5–6) | 3 (ch 7–9) |
+| 5 A circuits | 2 (ch 7–8) | 3 (ch 10–12) |
+| Sum of fitted fuses | 130 A | 185 A |
+| Input voltage | DC 12–24 V | DC 12–24 V |
+| Main breaker included | yes (rating not stated) | yes, 100 A |
+| RF remote | no — panel + app only | yes, 433 MHz |
+| Ingress rating | IP65 | IP65 |
+| List price (2026-10-05) | $269.99 | $339.99 |
+
+- **The total is the binding limit.** On both boxes the fitted fuses add up to roughly twice the total
+  rating, so not every circuit can run at its fuse value at once — about 7.5 A per circuit averaged across
+  an AR-800, 8.3 A across an AC-1200.
+- **Per circuit they are the same class of hardware:** the same four fuse sizes, shown as blade fuses in the wiring diagrams.
+  The AR-800 simply has fewer circuits at each size.
+- **Two AR-800s** give 16 circuits and 120 A over two separate 60 A feeds, with four 30 A circuits —
+  more than one AC-1200, less than two (24 circuits, 200 A).
+- **Unclear in the listings:** both state "Rated Voltage: 12V 20A / 24V 10A" without explanation, which
+  does not match the 30 A fuses on channels 1–2, and neither says whether any figure is continuous or
+  peak. Treat 30 A as a fuse rating, not a proven continuous rating.
 
 ## Other board options
 The LILYGO **T-CAN485** is neat and cheap with an onboard 5–12 V buck, but that input window is

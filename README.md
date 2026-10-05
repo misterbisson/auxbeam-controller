@@ -24,7 +24,7 @@ being problems, and the wired panel + RF remote keep working as independent over
   switches, an RGB backlight light, a pulse-timing number, and FFF2 state feedback.
 - **[HARDWARE.md](HARDWARE.md)** — two rugged in-vehicle builds (Olimex ESP32-GATEWAY-EA for antenna
   flexibility, or Kincony KC868-A4 turnkey/controller-mounted): BOM, automotive power front-end,
-  antenna strategy, and ESPHome board notes.
+  antenna strategy, and ESPHome board notes. Also compares AR-800 and AC-1200 current ratings.
 - **[ROADMAP.md](ROADMAP.md)** — phased plan: start on the Pi's own Bluetooth (HA custom integration),
   graduate to an ESP32 (Bluetooth Proxy) only if range/contention/decoupling demand it — with no rewrite.
 - **[tools/panel_bench.py](tools/panel_bench.py)** — Phase 0 bench script: scan/connect/GATT-dump, decode
