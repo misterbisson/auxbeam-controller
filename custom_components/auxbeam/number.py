@@ -15,7 +15,8 @@ async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     panel: AuxbeamPanel = hass.data[DOMAIN][entry.entry_id]
-    async_add_entities([AuxbeamPulseTime(panel)])
+    if panel.has_pulse:  # FFFA is optional; the vendor app checks for it too
+        async_add_entities([AuxbeamPulseTime(panel)])
 
 
 class AuxbeamPulseTime(AuxbeamEntity, NumberEntity):

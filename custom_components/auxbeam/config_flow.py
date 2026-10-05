@@ -10,7 +10,7 @@ from homeassistant.components.bluetooth import (
 )
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 
-from .const import CONF_FRAME_LENGTH, CONF_LOOPS, DOMAIN, NAME_PREFIX
+from .const import CONF_FRAME_LENGTH, CONF_LOOPS, DOMAIN, NAME_MARKERS
 from .protocol import control_frame_length, loop_count_from_name
 
 
@@ -26,9 +26,10 @@ def _entry_data(info: BluetoothServiceInfoBleak) -> dict[str, Any]:
 
 
 def _is_panel(info: BluetoothServiceInfoBleak) -> bool:
-    # TODO(Phase 0): confirm the advertised name really starts with "Controller".
-    # FFF0 alone is too generic to match on; the name prefix is the reliable signal.
-    return (info.name or "").startswith(NAME_PREFIX)
+    # Same test as the vendor app's scan: the name contains "Controller" or "SwitchDevice".
+    # FFF0 alone is too generic to match on. TODO(Phase 0): confirm the real advertised name.
+    name = info.name or ""
+    return any(marker in name for marker in NAME_MARKERS)
 
 
 class AuxbeamConfigFlow(ConfigFlow, domain=DOMAIN):

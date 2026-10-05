@@ -11,7 +11,7 @@ route through *whatever* adapter HA knows about — the Pi's onboard radio today
 
 ## Phase 0 — Bench validation (any machine, ~30 min)
 Run **[`tools/panel_bench.py`](tools/panel_bench.py)** (`pip install -r tools/requirements.txt`) against
-the real panel before building anything. It scans for `Controller12`, connects (checks it's really
+the real panel before building anything. It scans for the names the vendor app accepts (`Controller…` or `SwitchDevice…`), connects (checks it's really
 no-PIN), dumps the GATT table, reads/decodes **FFF2** state, watches for a notification when you flip a
 *physical* switch, and — only if you pass `--channel N` — proves a write toggles that relay. It prints a
 PASS/---- checklist mapping straight to [PROTOCOL.md](PROTOCOL.md)'s open *verify* items (no-PIN connect,

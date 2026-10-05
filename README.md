@@ -55,7 +55,9 @@ The vendor app is `com.qunchen.ble.switchpanel` ("SwitchPanel"), a **Qunchen whi
 rebadged across brands. The same BLE core appears to back other `Controller4/6/8/10/12` panels and
 rebrands (e.g. Rough Country's "Switch Control", `com.qunchen.ble.another2.switchpanel`), so this
 protocol **may** apply to those too — unverified; confirm against your own hardware. The AC-1200
-advertises a BLE name containing `Controller12`.
+advertises a BLE name containing `Controller12`. 8-gang panels come in three generations that the app
+tells apart by name (`SwitchDevice`, bare `Controller`, `Controller8`) and that differ in control-frame
+length — see [PROTOCOL.md](PROTOCOL.md#device-identity). All three are matched here.
 
 ## How this was made / reproduce it
 This is clean interoperability work: the protocol is documented from the app's own logic. This repo

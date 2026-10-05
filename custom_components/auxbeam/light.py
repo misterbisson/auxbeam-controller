@@ -27,7 +27,8 @@ async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     panel: AuxbeamPanel = hass.data[DOMAIN][entry.entry_id]
-    async_add_entities([AuxbeamBacklight(panel)])
+    if panel.has_backlight:  # older panels may have no FFF4
+        async_add_entities([AuxbeamBacklight(panel)])
 
 
 class AuxbeamBacklight(AuxbeamEntity, LightEntity):

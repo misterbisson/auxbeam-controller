@@ -13,9 +13,21 @@ Source of truth: `jadx-out/sources/com/qunchen/ble/switchpanel/util/BleUtil.java
 - "Loop" = 回路 = **circuit/channel**. A 12-gang panel = 12 loops.
 
 ## Device identity
-- Panels advertise a BLE **name containing `Controller<N>`**: `Controller12`, `Controller10`,
-  `Controller8`, `Controller6`, `Controller4` (a momentary variant appends `M`, e.g. `Controller6M`).
-  → The **AC-1200 (12-gang) should advertise as `Controller12`**. Use a name-contains filter on the ESP.
+- The app's scan accepts any BLE **name containing `Controller` or `SwitchDevice`**, and everything
+  else it knows about a panel is derived from that name (all substring matches):
+  - **Gang count:** `Controller12` → 12, `Controller6` → 6, `Controller4` → 4, `Controller10` → 10,
+    **anything else → 8**. A momentary variant appends `M`, e.g. `Controller6M`.
+  - → The **AC-1200 (12-gang) should advertise as `Controller12`**; there is only one 12-gang code path.
+- **Three generations of 8-gang** are visible in the app, told apart only by name:
+
+  | Advertised name contains | App treats it as | FFF1 frame | Notes |
+  |---|---|---|---|
+  | `SwitchDevice` | 8-gang, oldest | 5 bytes | "Control mode": the app refuses colour-picker changes and group editing (it tests for a name starting with `S`). Whether the firmware has FFF4 at all is unknown. |
+  | `Controller` with no gang number the app recognises | 8-gang | 5 bytes | Original 8-gang UI layout. |
+  | `Controller8` | "new" 8-gang | **7 bytes** (zero-padded) | Its own UI layout and user guide. |
+
+  The app has no notion of the control box's physical layout (one-sided vs two-sided outlets), so which
+  generation a given retail unit is — including the AR-800 — is **(verify)**: read the name off a scan.
 - BLE library in the app: `com.inuker.bluetooth.library` (BluetoothKit). Writes use `writeNoRsp`
   (Write **Without** Response). Connect uses defaults — **no bonding/PIN observed (verify)**.
 
@@ -32,6 +44,9 @@ Service **`0000fff0-0000-1000-8000-00805f9b34fb`** (short **FFF0**). Characteris
 | FFF6 | read/write/notify | "K9" variant data (not on this panel)     | `writeK9`/readK9      |
 | FFFA | read + write      | Pulse-mode timing config                  | `writePulse`/readPulse|
 | FFFF | read              | Anti-clone CRC check — **ignore**         | `checkArc`            |
+
+**Not every panel has every characteristic.** The app checks at connect whether **FFFA** exists and
+hides the pulse slider when it doesn't, so treat FFFA (and, on the oldest generation, FFF4) as optional.
 
 Notifications are subscribed on **FFF2, FFF3, FFF4**. **FFF2 is the important one** — the panel pushes
 channel state here, so state changes made from the physical panel or RF remote *should* be reflected
@@ -118,7 +133,8 @@ relative to the app slider**, which trips you up if you only read the layout:
   it disconnects on mismatch. Irrelevant to controlling the panel — don't touch it.
 
 ## Hardware verification checklist (day one with the panel)
-1. Scan (LightBlue/nRF): confirm name `Controller12` and service **FFF0** with chars FFF1/FFF2/FFF4…
+1. Scan (LightBlue/nRF): note the advertised name (`Controller12` expected on an AC-1200; on an 8-gang,
+   which of the three generations above) and confirm service **FFF0** with chars FFF1/FFF2/FFF4…
 2. Confirm connect needs **no PIN/bond**.
 3. Write `0C 18 88 88 88 88 88` to **FFF1** (no response) → channel 1 should switch ON. Then `…08…` → OFF.
 4. Subscribe to **FFF2** notify. Flip a **physical** switch → do you get a notification? (make-or-break

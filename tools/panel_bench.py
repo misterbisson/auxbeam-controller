@@ -24,6 +24,9 @@ Gang count and control-frame length are auto-detected from the advertised name (
 Controller8, ...), following the vendor app's rules. Override with --loops / --frame-length, e.g.
 to test whether an 8-gang wants the 5-byte or the 7-byte frame.
 
+The scan matches the same names the vendor app does: anything containing "Controller" (current
+panels) or "SwitchDevice" (the oldest 8-gang generation). Use --name to match something else.
+
 Safety: without --channel, the script never writes to the panel. With --channel it will toggle
 that ONE circuit on then off, after a confirmation prompt (skip the prompt with --yes).
 
@@ -45,6 +48,10 @@ FFF2 = "0000fff2-0000-1000-8000-00805f9b34fb"  # read + notify: channel state
 FFF4 = "0000fff4-0000-1000-8000-00805f9b34fb"  # write + notify: backlight [bright,R,G,B]
 FFFA = "0000fffa-0000-1000-8000-00805f9b34fb"  # read + write: pulse timing (byte 4..50)
 EXPECTED_CHARS = {FFF1: "FFF1 control", FFF2: "FFF2 state", FFF4: "FFF4 backlight", FFFA: "FFFA pulse"}
+REQUIRED_CHARS = (FFF1, FFF2)  # FFF4 / FFFA are optional: older generations may lack them
+
+# Names the vendor app's scan accepts (substring match) — see PROTOCOL.md "Device identity".
+NAME_MARKERS = ("Controller", "SwitchDevice")
 
 NONE_NIBBLE = 8  # "leave this channel unchanged"
 
@@ -111,16 +118,17 @@ def decode_state(data: bytes, loop_count: int = 12) -> str:
 
 
 # --- bench phases ------------------------------------------------------------
-async def scan(name_filter: str, timeout: float):
-    print(f"[scan] {timeout:.0f}s, matching name contains '{name_filter}' ...")
+async def scan(name_filters, timeout: float):
+    wanted = " or ".join(repr(f) for f in name_filters)
+    print(f"[scan] {timeout:.0f}s, matching name contains {wanted} ...")
     found = await BleakScanner.discover(timeout=timeout, return_adv=True)
     hits = []
     for dev, adv in found.values():
         nm = adv.local_name or dev.name or ""
-        if name_filter.lower() in nm.lower():
+        if any(f.lower() in nm.lower() for f in name_filters):
             hits.append((dev, adv, nm))
     if not hits:
-        print(f"[scan] no device whose name contains '{name_filter}'. Seen this scan:")
+        print(f"[scan] no device whose name contains {wanted}. Seen this scan:")
         for dev, adv in sorted(found.values(), key=lambda x: -(x[1].rssi or -999))[:12]:
             print(f"        {dev.address}  rssi={adv.rssi}  name={adv.local_name or dev.name!r}")
         return None, None
@@ -147,7 +155,7 @@ async def run(args):
 
     device, name = None, None
     if args.address is None or args.scan_only:
-        device, name = await scan(args.name, args.scan_timeout)
+        device, name = await scan([args.name] if args.name else NAME_MARKERS, args.scan_timeout)
         results["device found"] = (device is not None, "")
         if args.scan_only or device is None:
             summary(results)
@@ -187,9 +195,12 @@ async def run(args):
                 present.add(ch.uuid.lower())
                 label = EXPECTED_CHARS.get(ch.uuid.lower(), "")
                 print(f"      char {ch.uuid}  [{','.join(ch.properties)}]  {label}")
-        missing = [lbl for u, lbl in EXPECTED_CHARS.items() if u not in present]
+        missing = [EXPECTED_CHARS[u] for u in REQUIRED_CHARS if u not in present]
+        absent = [lbl for u, lbl in EXPECTED_CHARS.items() if u not in REQUIRED_CHARS and u not in present]
         results["service FFF0 present"] = (svc_ok, "")
-        results["expected chars present"] = (not missing, f"missing: {missing}" if missing else "all four found")
+        results["control + state chars present"] = (not missing, f"missing: {missing}" if missing else "FFF1 + FFF2 found")
+        results["backlight + pulse chars present"] = (
+            not absent, f"absent: {absent} (optional; older panels may lack them)" if absent else "FFF4 + FFFA found")
 
         # --- subscribe FFF2 so we catch responses to our own writes AND physical changes ---
         counter = {"n": 0}
@@ -285,7 +296,8 @@ def summary(results: dict):
 def parse_args(argv):
     p = argparse.ArgumentParser(description="Bench-validate the Auxbeam/Qunchen switch panel BLE protocol.")
     p.add_argument("--address", help="Panel BLE MAC (or macOS UUID). Omit to scan by name.")
-    p.add_argument("--name", default="Controller", help="Name substring to match when scanning (default: Controller)")
+    p.add_argument("--name", help="Name substring to match when scanning. Default: the vendor app's "
+                                  "own filter ('Controller' or 'SwitchDevice')")
     p.add_argument("--loops", type=int, help="Channel count. Default: auto-detect from the advertised name")
     p.add_argument("--frame-length", type=int,
                    help="Control frame length in bytes. Default: the vendor app's rule (7 for 12-gang, "

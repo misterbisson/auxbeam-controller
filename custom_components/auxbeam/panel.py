@@ -41,6 +41,10 @@ class AuxbeamPanel:
                                            for ch in range(1, loop_count + 1)}
         self.backlight: dict = {"brightness": 0, "rgb": (255, 255, 255)}
         self.pulse: int | None = None
+        # Not every generation has these characteristics (the vendor app checks for FFFA at
+        # connect); set from the GATT table on first connection.
+        self.has_backlight = True
+        self.has_pulse = True
 
     # --- lifecycle ---------------------------------------------------------
     @property
@@ -96,6 +100,8 @@ class AuxbeamPanel:
                 ble_device_callback=lambda: self._ble_device,
             )
             self._client = client
+            self.has_backlight = client.services.get_characteristic(CHAR_BACKLIGHT) is not None
+            self.has_pulse = client.services.get_characteristic(CHAR_PULSE) is not None
             await client.start_notify(CHAR_STATE, self._on_notify)
             _LOGGER.debug("connected to panel %s", self.address)
         self._notify_listeners()
@@ -124,16 +130,18 @@ class AuxbeamPanel:
                 bytes(await self._client.read_gatt_char(CHAR_STATE)), self._loop_count)
         except Exception as err:  # noqa: BLE001
             _LOGGER.debug("read FFF2 failed: %s", err)
-        try:
-            self.backlight = protocol.parse_backlight(
-                bytes(await self._client.read_gatt_char(CHAR_BACKLIGHT)))
-        except Exception as err:  # noqa: BLE001
-            _LOGGER.debug("read FFF4 failed: %s", err)
-        try:
-            data = bytes(await self._client.read_gatt_char(CHAR_PULSE))
-            self.pulse = data[0] if data else None
-        except Exception as err:  # noqa: BLE001
-            _LOGGER.debug("read FFFA failed: %s", err)
+        if self.has_backlight:
+            try:
+                self.backlight = protocol.parse_backlight(
+                    bytes(await self._client.read_gatt_char(CHAR_BACKLIGHT)))
+            except Exception as err:  # noqa: BLE001
+                _LOGGER.debug("read FFF4 failed: %s", err)
+        if self.has_pulse:
+            try:
+                data = bytes(await self._client.read_gatt_char(CHAR_PULSE))
+                self.pulse = data[0] if data else None
+            except Exception as err:  # noqa: BLE001
+                _LOGGER.debug("read FFFA failed: %s", err)
         self._notify_listeners()
 
     def _on_notify(self, _sender, data: bytearray) -> None:

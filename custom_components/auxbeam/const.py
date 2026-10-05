@@ -13,8 +13,10 @@ CHAR_STATE = "0000fff2-0000-1000-8000-00805f9b34fb"     # read + notify: channel
 CHAR_BACKLIGHT = "0000fff4-0000-1000-8000-00805f9b34fb"  # write + notify: [bright,R,G,B]
 CHAR_PULSE = "0000fffa-0000-1000-8000-00805f9b34fb"      # read + write: pulse timing byte
 
-# Panels advertise a name like Controller12 / Controller8 ... (confirm in Phase 0).
-NAME_PREFIX = "Controller"
+# The vendor app accepts any advertised name containing one of these (confirm in Phase 0).
+# "Controller12" / "Controller8" / bare "Controller" ... are current panels; "SwitchDevice" is the
+# oldest 8-gang generation — see PROTOCOL.md.
+NAME_MARKERS = ("Controller", "SwitchDevice")
 
 CONF_LOOPS = "loops"  # gang count, auto-detected from the advertised name at config time
 CONF_FRAME_LENGTH = "frame_length"  # control frame size in bytes, same source
