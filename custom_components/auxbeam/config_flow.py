@@ -10,8 +10,8 @@ from homeassistant.components.bluetooth import (
 )
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 
-from .const import CONF_LOOPS, DOMAIN, NAME_PREFIX
-from .protocol import loop_count_from_name
+from .const import CONF_FRAME_LENGTH, CONF_LOOPS, DOMAIN, NAME_PREFIX
+from .protocol import control_frame_length, loop_count_from_name
 
 
 def _title(info: BluetoothServiceInfoBleak) -> str:
@@ -21,7 +21,8 @@ def _title(info: BluetoothServiceInfoBleak) -> str:
 
 
 def _entry_data(info: BluetoothServiceInfoBleak) -> dict[str, Any]:
-    return {CONF_LOOPS: loop_count_from_name(info.name)}
+    loops = loop_count_from_name(info.name)
+    return {CONF_LOOPS: loops, CONF_FRAME_LENGTH: control_frame_length(loops, info.name)}
 
 
 def _is_panel(info: BluetoothServiceInfoBleak) -> bool:

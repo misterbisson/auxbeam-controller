@@ -17,6 +17,7 @@ CHAR_PULSE = "0000fffa-0000-1000-8000-00805f9b34fb"      # read + write: pulse t
 NAME_PREFIX = "Controller"
 
 CONF_LOOPS = "loops"  # gang count, auto-detected from the advertised name at config time
+CONF_FRAME_LENGTH = "frame_length"  # control frame size in bytes, same source
 
 # Pulse-timing wire byte range (inverted vs the app slider) — see PROTOCOL.md
 PULSE_MIN = 4

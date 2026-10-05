@@ -41,7 +41,12 @@ also a 500 ms-delayed `readState()` after every write as a belt-and-suspenders r
 ## Channel control — FFF1 (the money frame)
 Frame = **1 header byte + N/2 packed nibbles**, one nibble per channel. For the 12-gang: **7 bytes**.
 
-- **byte[0] = loop count** = `0x0C` (12). (8-gang → `0x08` and a 5-byte frame; 6-gang → 7 bytes.)
+- **byte[0] = loop count** = `0x0C` (12).
+- **Frame length is fixed by the app, not by the nibble count:** 7 bytes for 12-gang, 6-gang and panels
+  whose name contains `Controller8`; 5 bytes for everything else. Unused trailing bytes are `00`. So an
+  8-gang ch1 ON is `08 18 88 88 88`, or `08 18 88 88 88 00 00` on a `Controller8`-named panel, and a 6-gang
+  ch1 ON is `06 18 88 88 00 00 00`. (The app's 10-gang path overflows its 5-byte buffer, so that case is
+  unknown.)
 - Remaining bytes pack channel nibbles **big-endian, channel 1 = high nibble of byte[1]**:
   `byte[1] = (ch1<<4)|ch2`, `byte[2] = (ch3<<4)|ch4`, … `byte[6] = (ch11<<4)|ch12`.
 

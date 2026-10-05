@@ -25,9 +25,11 @@ _LOGGER = logging.getLogger(__name__)
 class AuxbeamPanel:
     """Owns the BLE link and the last-known panel state."""
 
-    def __init__(self, ble_device: BLEDevice, loop_count: int = 12, name: str | None = None) -> None:
+    def __init__(self, ble_device: BLEDevice, loop_count: int = 12, name: str | None = None,
+                 frame_length: int | None = None) -> None:
         self._ble_device = ble_device
         self._loop_count = loop_count
+        self._frame_length = frame_length or protocol.control_frame_length(loop_count, ble_device.name)
         self.name = name or ble_device.name or "Switch Panel"
         self._client: BleakClientWithServiceCache | None = None
         self._lock = asyncio.Lock()
@@ -147,7 +149,8 @@ class AuxbeamPanel:
             name = self.channels.get(channel, {}).get("mode")
             mode = {"momentary": 1, "pulsed": 2}.get(name, 0)
         await self._ensure_connected()
-        frame = protocol.build_control_frame(channel, on, self._loop_count, mode)
+        frame = protocol.build_control_frame(
+            channel, on, self._loop_count, mode, frame_length=self._frame_length)
         await self._client.write_gatt_char(CHAR_CONTROL, frame, response=False)
         self.channels[channel] = {"on": on, "mode": self.channels.get(channel, {}).get("mode")}
         self._notify_listeners()  # optimistic; FFF2 notify will correct if needed

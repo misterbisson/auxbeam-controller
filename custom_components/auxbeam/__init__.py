@@ -12,7 +12,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryNotReady
 
-from .const import CONF_LOOPS, DOMAIN, PLATFORMS
+from .const import CONF_FRAME_LENGTH, CONF_LOOPS, DOMAIN, PLATFORMS
 from .panel import AuxbeamPanel
 from .protocol import loop_count_from_name
 
@@ -27,7 +27,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     # Gang count is fixed at config time; fall back to the advertised name for older entries.
     loops = entry.data.get(CONF_LOOPS) or loop_count_from_name(ble_device.name)
-    panel = AuxbeamPanel(ble_device, loops, name=entry.title)
+    panel = AuxbeamPanel(
+        ble_device, loops, name=entry.title, frame_length=entry.data.get(CONF_FRAME_LENGTH)
+    )
 
     @callback
     def _async_update_ble(service_info: bluetooth.BluetoothServiceInfoBleak, change) -> None:

@@ -20,12 +20,18 @@ Typical use, in order of increasing commitment:
     #    so you must name a channel you KNOW is safe to toggle (e.g. a bench LED):
     python3 tools/panel_bench.py --address AA:BB:CC:DD:EE:FF --channel 1
 
+Gang count and control-frame length are auto-detected from the advertised name (Controller12,
+Controller8, ...), following the vendor app's rules. Override with --loops / --frame-length, e.g.
+to test whether an 8-gang wants the 5-byte or the 7-byte frame.
+
 Safety: without --channel, the script never writes to the panel. With --channel it will toggle
 that ONE circuit on then off, after a confirmation prompt (skip the prompt with --yes).
 
 macOS note: bleak uses a system-assigned UUID instead of a MAC for --address. Use --scan-only
 first to discover the identifier this machine sees, then pass that.
 """
+from __future__ import annotations
+
 import argparse
 import asyncio
 import sys
@@ -44,9 +50,32 @@ NONE_NIBBLE = 8  # "leave this channel unchanged"
 
 
 # --- protocol helpers (mirror PROTOCOL.md) -----------------------------------
-def build_control_frame(channel: int, on: bool, loop_count: int = 12, mode: int = 0) -> bytes:
+def loop_count_from_name(name: str | None) -> int:
+    """Gang count from the advertised name, as the vendor app does it:
+    Controller12 -> 12, Controller6 -> 6, Controller4 -> 4, Controller10 -> 10, anything else 8."""
+    name = name or ""
+    if "Controller12" in name:
+        return 12
+    if "Controller6" in name:
+        return 6
+    if "Controller4" in name:
+        return 4
+    return 10 if "Controller10" in name else 8
+
+
+def control_frame_length(loop_count: int, name: str | None = None) -> int:
+    """Total FFF1 frame length the vendor app sends: 7 bytes for 12-gang, 6-gang and panels
+    whose name contains Controller8; 5 bytes for everything else."""
+    if loop_count in (12, 6) or "Controller8" in (name or ""):
+        return 7
+    return 5
+
+
+def build_control_frame(channel: int, on: bool, loop_count: int = 12, mode: int = 0,
+                        frame_length: int | None = None) -> bytes:
     """[loop_count][packed nibbles], one nibble/channel. mode: 0 toggle,1 momentary,2 pulsed.
-    Target channel = mode*2 + on; all other channels = 8 (no-change). Channel is 1-based."""
+    Target channel = mode*2 + on; all other channels = 8 (no-change). Channel is 1-based.
+    The app sends a fixed-size buffer, so the frame is zero-padded up to frame_length."""
     if not 1 <= channel <= loop_count:
         raise ValueError(f"channel {channel} out of range 1..{loop_count}")
     nibbles = [NONE_NIBBLE] * loop_count
@@ -54,7 +83,8 @@ def build_control_frame(channel: int, on: bool, loop_count: int = 12, mode: int 
     if len(nibbles) % 2:
         nibbles.append(NONE_NIBBLE)  # pad odd loop counts
     body = bytes((nibbles[i] << 4) | nibbles[i + 1] for i in range(0, len(nibbles), 2))
-    return bytes([loop_count]) + body
+    frame = bytes([loop_count]) + body
+    return frame.ljust(frame_length or control_frame_length(loop_count), b"\x00")
 
 
 def describe_nibble(nib: int) -> str:
@@ -93,12 +123,16 @@ async def scan(name_filter: str, timeout: float):
         print(f"[scan] no device whose name contains '{name_filter}'. Seen this scan:")
         for dev, adv in sorted(found.values(), key=lambda x: -(x[1].rssi or -999))[:12]:
             print(f"        {dev.address}  rssi={adv.rssi}  name={adv.local_name or dev.name!r}")
-        return None
-    for dev, adv, nm in sorted(hits, key=lambda x: -(x[1].rssi or -999)):
+        return None, None
+    hits.sort(key=lambda x: -(x[1].rssi or -999))  # strongest first
+    for dev, adv, nm in hits:
         rssi = adv.rssi
         note = "good" if rssi and rssi > -70 else "usable" if rssi and rssi > -85 else "weak → an ESP proxy may help"
-        print(f"[scan] FOUND  {dev.address}  name={nm!r}  rssi={rssi} dBm ({note})")
-    return hits[0][0]
+        print(f"[scan] FOUND  {dev.address}  name={nm!r}  {loop_count_from_name(nm)}-gang  "
+              f"rssi={rssi} dBm ({note})")
+    if len(hits) > 1:
+        print(f"[scan] {len(hits)} panels found; using the strongest. Pass --address to pick another.")
+    return hits[0][0], hits[0][2]
 
 
 def make_notify_handler(counter: dict, loop_count: int, tag: str):
@@ -111,14 +145,28 @@ def make_notify_handler(counter: dict, loop_count: int, tag: str):
 async def run(args):
     results = {}  # verify-item -> (ok, detail)
 
-    device = None
+    device, name = None, None
     if args.address is None or args.scan_only:
-        device = await scan(args.name, args.scan_timeout)
+        device, name = await scan(args.name, args.scan_timeout)
         results["device found"] = (device is not None, "")
         if args.scan_only or device is None:
             summary(results)
             return
-    target = args.address or device
+    elif args.loops is None or args.frame_length is None:
+        # Need the advertised name to work out gang count and frame length.
+        print(f"[scan] looking up {args.address} to read its advertised name ...")
+        device = await BleakScanner.find_device_by_address(args.address, timeout=args.scan_timeout)
+        name = device.name if device else None
+    target = device or args.address
+
+    if args.loops is not None:
+        loops, how = args.loops, "from --loops"
+    elif name:
+        loops, how = loop_count_from_name(name), f"auto-detected from name {name!r}"
+    else:
+        loops, how = 12, "name unknown, assuming 12; pass --loops to override"
+    frame_length = args.frame_length or control_frame_length(loops, name)
+    print(f"[panel] {loops}-gang ({how}); {frame_length}-byte control frame")
 
     print(f"\n[connect] {target} ...")
     async with BleakClient(target, timeout=args.connect_timeout) as client:
@@ -148,7 +196,7 @@ async def run(args):
         notify_ok = False
         if FFF2 in present:
             try:
-                await client.start_notify(FFF2, make_notify_handler(counter, args.loops, "FFF2"))
+                await client.start_notify(FFF2, make_notify_handler(counter, loops, "FFF2"))
                 notify_ok = True
                 print("\n[notify] subscribed to FFF2 (state).")
             except Exception as e:  # noqa: BLE001
@@ -158,7 +206,7 @@ async def run(args):
         if FFF2 in present:
             try:
                 data = bytes(await client.read_gatt_char(FFF2))
-                print(f"[read] FFF2 state:\n{decode_state(data, args.loops)}")
+                print(f"[read] FFF2 state:\n{decode_state(data, loops)}")
                 results["FFF2 read + framing"] = (True, f"{len(data)} bytes")
             except Exception as e:  # noqa: BLE001
                 print(f"[read] FFF2 read failed: {e}")
@@ -191,8 +239,8 @@ async def run(args):
             elif FFF1 not in present:
                 print("[control] FFF1 not present — cannot run write test.")
             else:
-                on = build_control_frame(args.channel, True, args.loops)
-                off = build_control_frame(args.channel, False, args.loops)
+                on = build_control_frame(args.channel, True, loops, frame_length=frame_length)
+                off = build_control_frame(args.channel, False, loops, frame_length=frame_length)
                 print(f"[control] channel {args.channel} ON  → write FFF1 {on.hex(' ')}")
                 await client.write_gatt_char(FFF1, on, response=False)
                 await asyncio.sleep(args.dwell)
@@ -238,7 +286,10 @@ def parse_args(argv):
     p = argparse.ArgumentParser(description="Bench-validate the Auxbeam/Qunchen switch panel BLE protocol.")
     p.add_argument("--address", help="Panel BLE MAC (or macOS UUID). Omit to scan by name.")
     p.add_argument("--name", default="Controller", help="Name substring to match when scanning (default: Controller)")
-    p.add_argument("--loops", type=int, default=12, help="Channel count (12 for AC-1200; default 12)")
+    p.add_argument("--loops", type=int, help="Channel count. Default: auto-detect from the advertised name")
+    p.add_argument("--frame-length", type=int,
+                   help="Control frame length in bytes. Default: the vendor app's rule (7 for 12-gang, "
+                        "6-gang and Controller8 names; else 5). Override to test the other variant.")
     p.add_argument("--channel", type=int, help="Channel to toggle in the WRITE test (1-based). Omit = no writes.")
     p.add_argument("--yes", action="store_true", help="Skip the actuation confirmation prompt")
     p.add_argument("--scan-only", action="store_true", help="Only scan and report; never connect")

@@ -22,8 +22,10 @@ stack (`bleak-retry-connector`), so connections route over the Pi's adapter toda
 - **Gang count is auto-detected** from the advertised name using the vendor app's own rule
   (`Controller12` → 12, `Controller6` → 6, `Controller4` → 4, `Controller10` → 10, anything else → 8), so
   an 8-gang AR-800 and a 12-gang AC-1200 can coexist.
-- **Not handled yet:** the vendor app pads the control frame to 7 bytes for panels whose name contains
-  `Controller8`. This sketch sends the unpadded 5-byte frame for every 8-gang.
+- **Control-frame length follows the vendor app:** it sends a fixed-size, zero-padded buffer — 7 bytes for
+  12-gang, 6-gang and panels whose name contains `Controller8`, 5 bytes for everything else. The length is
+  worked out from the advertised name at setup. The app's own 10-gang path does not fit its 5-byte buffer,
+  so 10-gang frames are sent unpadded at 6 bytes and are the least certain case.
 
 ## Layout
 | File | Role |

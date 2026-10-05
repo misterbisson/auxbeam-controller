@@ -27,8 +27,18 @@ def loop_count_from_name(name: str | None) -> int:
     return 10 if "Controller10" in name else 8
 
 
-def build_control_frame(channel: int, on: bool, loop_count: int = 12, mode: int = MODE_TOGGLE) -> bytes:
-    """[loop_count][packed nibbles]; target channel = mode*2+on, others = 8. 1-based channel."""
+def control_frame_length(loop_count: int, name: str | None = None) -> int:
+    """Total FFF1 frame length the vendor app sends: 7 bytes for 12-gang, 6-gang and panels
+    whose name contains Controller8; 5 bytes for everything else."""
+    if loop_count in (12, 6) or "Controller8" in (name or ""):
+        return 7
+    return 5
+
+
+def build_control_frame(channel: int, on: bool, loop_count: int = 12, mode: int = MODE_TOGGLE,
+                        frame_length: int | None = None) -> bytes:
+    """[loop_count][packed nibbles]; target channel = mode*2+on, others = 8. 1-based channel.
+    The app sends a fixed-size buffer, so the frame is zero-padded up to frame_length."""
     if not 1 <= channel <= loop_count:
         raise ValueError(f"channel {channel} out of range 1..{loop_count}")
     nibbles = [NONE_NIBBLE] * loop_count
@@ -36,7 +46,8 @@ def build_control_frame(channel: int, on: bool, loop_count: int = 12, mode: int 
     if len(nibbles) % 2:
         nibbles.append(NONE_NIBBLE)
     body = bytes((nibbles[i] << 4) | nibbles[i + 1] for i in range(0, len(nibbles), 2))
-    return bytes([loop_count]) + body
+    frame = bytes([loop_count]) + body
+    return frame.ljust(frame_length or control_frame_length(loop_count), b"\x00")
 
 
 def build_backlight_frame(brightness: int, rgb: tuple[int, int, int]) -> bytes:
